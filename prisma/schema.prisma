@@ -1,0 +1,84 @@
+// This is your Prisma schema file
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String        @id @default(uuid())
+  name        String
+  email       String        @unique
+  password    String
+  walletId    String?
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt() @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime?     @map("deleted_at") @db.Timestamptz(3)
+  Transaction Transaction[]
+
+  Wallet    Wallet?     @relation(fields: [walletId], references: [id])
+  UserToken UserToken[]
+}
+
+model UserToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  User      User     @relation(references: [id], fields: [userId])
+}
+
+model Product {
+  id           String        @id @default(uuid())
+  name         String
+  description  String?
+  price        Int
+  availability Int
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt() @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime?     @map("deleted_at") @db.Timestamptz(3)
+  Transaction  Transaction[]
+}
+
+model Wallet {
+  id          String        @id @default(uuid())
+  balance     Int           @default(0)
+  userId      String        @unique
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt() @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime?     @map("deleted_at") @db.Timestamptz(3)
+  Transaction Transaction[]
+  User        User[]
+}
+
+enum TransactionType {
+  PAYMENT
+  DEPOSIT
+  WITHDRAWAL
+}
+
+model Transaction {
+  id              String          @id @default(uuid())
+  userId          String
+  walletId        String
+  productId       String?
+  transactionType TransactionType
+  trx             Json
+
+  User    User     @relation(fields: [userId], references: [id])
+  Wallet  Wallet   @relation(fields: [walletId], references: [id])
+  Product Product? @relation(fields: [productId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt() @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+}
